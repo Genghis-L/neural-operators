@@ -1,0 +1,16 @@
+numpy
+pandas
+Pillow
+scipy
+sympy
+tqdm
+h5py
+ipykernel
+ipython
+ipywidgets
+jupyter
+matplotlib
+tensorboard
+torch
+torchvision
+equinox

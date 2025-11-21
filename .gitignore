@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.so
+
+venv/
+.DS_Store
+.ipynb_checkpoints/
+
+# Generated datasets
+notebooks/ns_data.mat
+notebooks/NavierStokes_V1e-5_N1200_T20.mat
+
