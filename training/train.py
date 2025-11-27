@@ -33,14 +33,18 @@ def train_epoch(dataloader, model, optimizer, scheduler, loss_function, device='
     * scheduler: torch.optim.lr_scheduler - Scheduler to use
     * loss_function: torch.nn - Loss function to use
     """
+    model.train()
     
     # Train for each batch
     for x, y in dataloader:
-        batch_size, sx, sy, T_pred = y.shape
-        out = model(x.to(device)).reshape(batch_size, sx, sy, T_pred)
+        x, y = x.to(device), y.to(device)
+        batch_size = x.shape[0]
         
-        # Compute loss
-        l2 = loss_function(out.reshape(batch_size, -1), y.to(device).reshape(batch_size, -1))
+        # Forward pass - model output should match y shape
+        out = model(x)
+        
+        # Compute loss (flatten for loss computation)
+        l2 = loss_function(out.reshape(batch_size, -1), y.reshape(batch_size, -1))
 
         # Clear gradients
         optimizer.zero_grad()
@@ -67,20 +71,22 @@ def eval_epoch(dataloader, model, loss_function, num_batches=None, device='cpu')
     * num_batches: int - Number of batches to evaluate
     * device: str - Device to use (cpu or cuda)
     """
+    model.eval()
+    
     # Freeze model parameters
     with torch.no_grad():
-        # Historiales
         losses, mses = [], []
         
         # Evaluates this epoch with num_batches
-        test_l2 = 0
-        for a, u_true in take(dataloader, num_batches):
-            batch_size, sx, sy, T_pred = u_true.shape
-            out = model(a.to(device)).reshape(batch_size, sx, sy, T_pred)
+        for x, y in take(dataloader, num_batches):
+            x, y = x.to(device), y.to(device)
             
-            # Evaluate loss
-            test_l2 = loss_function(out.reshape(1, -1), u_true.to(device).reshape(1, -1)).item()
-            test_mse = F.mse_loss(out.reshape(1, -1), u_true.to(device).reshape(1, -1), reduction='mean')
+            # Forward pass - model output should match y shape
+            out = model(x)
+            
+            # Evaluate loss (flatten for loss computation)
+            test_l2 = loss_function(out.reshape(1, -1), y.reshape(1, -1)).item()
+            test_mse = F.mse_loss(out, y, reduction='mean')
             losses.append(test_l2)
             mses.append(test_mse.cpu())
             
@@ -205,9 +211,12 @@ def train_model(model, train_dataloader, test_dataloader, epochs=20, device='cpu
     if timer is True:
         end = time()
     
+    # Create DataFrames
+    loss_df = pd.DataFrame(loss_hist, columns=['train', 'test'])
+    mse_df = pd.DataFrame(mse_hist, columns=['train', 'test'])
+    
     # if timer is True, return the time with the histories
     if timer is True:
-        return {'results': [pd.DataFrame(loss_hist, columns=['train', 'test']), pd.DataFrame(mse_hist, columns=['train', 'test'])],
-                'time': end - start}
+        return loss_df, mse_df, end - start
     else:
-        return {'results': [pd.DataFrame(loss_hist, columns=['train', 'test']), pd.DataFrame(mse_hist, columns=['train', 'test'])]}
+        return loss_df, mse_df

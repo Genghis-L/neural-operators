@@ -13,4 +13,6 @@ matplotlib
 tensorboard
 torch
 torchvision
+tensorly
+lightning
 equinox
